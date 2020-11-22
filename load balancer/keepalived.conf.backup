@@ -1,0 +1,31 @@
+# https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/load_balancer_administration/ch-initial-setup-vsa
+global_defs {
+
+   notification_email {
+       admin@example.com
+   }
+   notification_email_from noreply@example.com
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 60
+}
+
+vrrp_sync_group VG1 {
+   group {
+      k8s
+   }
+}
+
+vrrp_instance k8s {
+    state BACKUP
+    interface ens33
+    virtual_router_id 50
+    priority 99
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass passw123
+    }
+    virtual_ipaddress {
+    192.168.255.20
+    }
+}
