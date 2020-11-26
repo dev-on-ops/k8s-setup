@@ -1,10 +1,4 @@
 # Default pillar values
-vip: 192.168.255.20
-vrrp_id:
-
-
-
-#######################################
 #{% if grains['os'] == 'RedHat' %}
 #apache: httpd
 #git: git
