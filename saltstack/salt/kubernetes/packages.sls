@@ -4,3 +4,4 @@ kubernetes_packages:
       - kubelet
       - kubeadm
       - kubectl
+    - refresh: True
