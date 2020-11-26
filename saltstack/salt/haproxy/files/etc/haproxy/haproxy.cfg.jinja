@@ -1,3 +1,6 @@
+{% set vip_role = pillar['haproxy_components']['vip_role'] %}
+
+
 # https://github.com/kubernetes/kubeadm/blob/master/docs/ha-considerations.md#options-for-software-load-balancing
 # https://tanzu.vmware.com/content/blog/exploring-kube-apiserver-load-balancers-for-on-premises-kubernetes-clusters
 global
@@ -38,11 +41,19 @@ defaults
    errorfile 503 /etc/haproxy/errors/503.http
    errorfile 504 /etc/haproxy/errors/504.http
 
-frontend k8s-api
-   bind 0.0.0.0:6443
-   mode tcp
-   option tcplog
-   default_backend k8s-api
+{% for frontend in haproxy_components -%}
+frontend {{ frontend }}
+    bind *.{{ frontend.frontport }}
+    mode tcp
+    option tcplog
+    default_backend {{ frontend }}
+{% endfor %}
+
+#frontend k8s-api
+#   bind 0.0.0.0:6443
+#   mode tcp
+#   option tcplog
+#   default_backend k8s-api
 
 frontend stats
    bind *:8404
@@ -51,13 +62,25 @@ frontend stats
    stats refresh 10s
    stats admin if LOCALHOST
 
-backend k8s-api
-   mode tcp
-   option tcplog
-   option tcp-check
-   balance roundrobin
-   default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+{% for backend in haproxy_components -%}
+backend {{ backend }}
+    mode tcp
+    option tcplog
+    option tcp-check
+    balance roundrobin
+    default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+    {% for server, addrs in salt['mine.get']('roles:web', 'network.ip_addrs', tgt_type='grain') | dictsort() %}
+    server {{ server }} {{ addrs[0] }}:80 check
+    {% endfor %}
+{% endfor %}
 
-       server apiserver1 192.168.255.31:6443 check
-       server apiserver2 192.168.255.32:6443 check
-       server apiserver3 192.168.255.33:6443 check
+#backend k8s-api
+#   mode tcp
+#   option tcplog
+#   option tcp-check
+#   balance roundrobin
+#   default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+#
+#       server apiserver1 192.168.255.31:6443 check
+#       server apiserver2 192.168.255.32:6443 check
+#       server apiserver3 192.168.255.33:6443 check
